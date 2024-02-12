@@ -395,10 +395,10 @@ def blind_bets():
     next_turn()
     Game.players[Game.turn_index].set_stake(Game.min_bet * 2)
     Game.first_bet = False
+    next_turn()
 
 
 def betting_round():
-    next_turn()
     while Game.first_bet:
         Game.players[Game.turn_index].place_first_bet()
         next_turn()
