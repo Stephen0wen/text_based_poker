@@ -127,7 +127,7 @@ class Game:
             return
         else:
             print("Invalid Selection")
-            self.place_first_bet()
+            self.place_bet()
 
 
 # creates the deck
@@ -148,7 +148,6 @@ def get_value(card):
 
 
 def get_card_name(card):
-    time.sleep(1 * Game.speed)
     value = card.value
     suit = str(card.suit)
     if value == 11:
@@ -174,7 +173,6 @@ def next_player(index, increment):
 
 def next_turn():
     Game.turn_index = next_player(Game.turn_index, 1)
-    _ = system('cls')
 
 
 def new_round():
