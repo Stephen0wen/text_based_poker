@@ -2,14 +2,7 @@ import random
 from os import system
 import time
 
-
 buy_in = 100
-# the first term is the player name, while the second term is to determine if the player is human or AI
-new_players = ("Player 1", True, buy_in), \
-              ("Player 2", True, buy_in), \
-              ("Player 3", True, buy_in), \
-              ("Player 4", True, buy_in)
-
 
 class Cards:
     deck = []
@@ -65,7 +58,7 @@ class Game:
             self.raise_amount()
         increase = int(amount) + Game.call_stake - self.stake
         if increase >= self.money:
-            return self.all_in()
+            return self.money - (Game.call_stake - self.stake)
         elif self.money > increase >= 0:
             return increase
         else:
@@ -130,16 +123,48 @@ class Game:
             self.place_bet()
 
 
+def number_of_players():
+    number_of_players = input("Select number of players from 2 to 10.\t")
+    if type(int(number_of_players)) != int:
+        print("Invalid Input\n")
+        number_of_players()
+    elif 2 <= int(number_of_players) <= 10:
+        return int(number_of_players)
+    else:
+        print("Input is out of acceptable range.")
+        number_of_players()
+
+
+def new_player_name(player_number):
+    name = input("Please enter a name for Player " + str(player_number) + "\t")
+    if name == "":
+        name = str("Player " + str(player_number))
+    name_exists = False
+    for player in Game.players:
+        if player.name == name:
+            name_exists = True
+    if name_exists:
+        print("That name is taken!\n")
+        name = new_player_name(player_number)
+    return name
+
+
+def create_players(number_of_players):
+    players = []
+    for i in range(number_of_players):
+        name = new_player_name(i + 1)
+        Game(name, True, buy_in)
+    return
+
+
 # creates the deck
 # numbers are used for picture card to simplify the scoring logic
 # the get_card_name function will enable picture card names to be printed
-def set_up_game(player_info):
+def set_up_game():
     suits = ("diamonds", "hearts", "clubs", "spades")
     for i in range(4):
         for j in range(2, 15):
             Cards(j, suits[i])
-    for i in range(len(player_info)):
-        Game(player_info[i][0], player_info[i][1], player_info[i][2])
 
 
 # This is needed as a function for the scoring process
@@ -210,6 +235,7 @@ def next_turn():
     system("clear")
     input(Game.players[Game.turn_index].name + " press ENTER to begin your turn.")
     system("clear")
+    print("***" + Game.players[Game.turn_index].name + "'s turn***\n")
     print_monies()
     print()
     print_stakes()
@@ -304,24 +330,23 @@ def get_score(five_cards):
                          five_cards[4].value)
     if is_straight and is_flush:
         if five_cards[0].value == 10:
-            return "Royal Flush", 10, [five_cards_values[2]]
+            return "Royal Flush", 10, five_cards_values
         else:
-            return "Straight Flush", 9, [five_cards_values[2]]
+            return "Straight Flush", 9, five_cards_values
     elif max_kind == 4:
-        return "Four of a Kind", 8, [value_of_kinds[kinds.index(4)]]
+        return "Four of a Kind", 8, value_of_kinds
     elif max_kind == 3 and min_kind == 2:
-        return "Full House", 7, (value_of_kinds[kinds.index(3)], value_of_kinds[kinds.index(2)])
+        return "Full House", 7, value_of_kinds
     elif is_flush:
         return "Flush", 6, five_cards_values
     elif is_straight:
-        return "Straight", 5, [five_cards_values[2]]
+        return "Straight", 5, five_cards_values
     elif max_kind == 3:
-        return "Three of a Kind", 4, [value_of_kinds[kinds.index(3)]]
+        return "Three of a Kind", 4, value_of_kinds
     elif kinds.count(2) == 2:
-        value_of_kinds.pop(kinds.index(1))
-        return "Two Pair", 3, (max(value_of_kinds), min(value_of_kinds))
+        return "Two Pair", 3, value_of_kinds
     elif kinds.count(2) == 1:
-        return "Pair", 2, [value_of_kinds[kinds.index(2)]]
+        return "Pair", 2, value_of_kinds
     else:
         return "High Card: " + get_card_name(five_cards[0]), 1, five_cards_values
 
@@ -415,7 +440,7 @@ def decide_winner():
 def blind_bets():
     Game.turn_index = Game.dealer_index
     system("clear")
-    print("You are the dealer.\n")
+    print(Game.players[Game.turn_index].name + " you are the dealer.\n")
     next_turn()
     print("You are the small blind.\n")
     Game.players[Game.turn_index].set_stake(Game.min_bet)
@@ -507,7 +532,9 @@ def round():
     
 
 def main():
-    set_up_game(new_players)
+    system("clear")
+    create_players(number_of_players())
+    set_up_game()
     round()
     
 
