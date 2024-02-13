@@ -234,7 +234,7 @@ def next_player(index, increment):
 
 
 def next_turn():
-    input("\nPress the ENTER key to end your turn.")
+    input("\nPress the ENTER key to continue.")
     Game.turn_index = next_player(Game.turn_index, 1)
     system("clear")
     input(Game.players[Game.turn_index].name + " press ENTER to begin your turn.")
@@ -454,7 +454,8 @@ def blind_bets():
     Game.first_bet = False
 
 
-def betting_round():
+def betting_round(player_index):
+    Game.turn_index = player_index - 1
     while Game.first_bet:
         next_turn()
         Game.players[Game.turn_index].place_first_bet()
@@ -468,8 +469,8 @@ def betting_round():
         for player in Game.players:
             if player.active and not player.is_all_in and player.stake < Game.call_stake:
                 continue_round = True
-        next_turn()
-        Game.players[Game.turn_index].place_bet()
+                next_turn()
+                Game.players[Game.turn_index].place_bet()
     Game.first_bet = True
 
 
@@ -509,14 +510,14 @@ def players_for_next_round():
     for player in Game.players:
         if len(Game.players) == 1:
             print(Game.players[0].name + " is the winner!")
-            return
+            exit
         elif player.money <= 2 * Game.min_bet:
             player.leave_game()
         else:
             player_continue_choice(player)
     if len(Game.players) == 1:
             print(Game.players[0].name + " is the winner!")
-            return
+            exit
     else:
         round()
 
@@ -525,12 +526,15 @@ def round():
     new_round()
     blind_bets()
     deal_hole_cards()
-    betting_round()
+    betting_round(next_player(Game.dealer_index, 3))
+    next_turn()
+    Game.players[Game.turn_index].place_bet()
     Game.table_cards = draw_cards(3)
-    betting_round()
+    betting_round(Game.dealer_index + 1)
     Game.table_cards += draw_cards(1)
-    betting_round()
+    betting_round(Game.dealer_index + 1)
     Game.table_cards += draw_cards(1)
+    betting_round(Game.dealer_index + 1)
     system("clear")
     best_combinations()
     winner_index = decide_winner()
