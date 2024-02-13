@@ -380,7 +380,6 @@ def decide_winner():
             elif first_hand_best(candidate_score, highest_score):
                 highest_score = candidate_score
                 winner_index = i
-    print(Game.players[winner_index].name + " is the winner")
     return winner_index
 
 
@@ -416,9 +415,58 @@ def betting_round():
     Game.first_bet = True
 
 
-def main():
-    set_up_game(new_players)
-    new_round()
+def print_monies():
+    for player in Game.players:
+        print(player.name + " has  £" + str(player.money))
+
+
+def print_stakes():
+    for player in Game.players:
+        print(player.name + "'s stake is £" + str(player.stake))
+
+
+def move_chips(winner_index):
+    winner_stake = Game.players[winner_index].stake
+    for player in Game.players:
+        if player.stake <= winner_stake:
+            Game.players[winner_index].money += player.stake
+            player.stake = 0
+        elif player.stake > winner_stake:
+            Game.players[winner_index].money += winner_stake
+            player.stake -= winner_stake
+            Game.player[winner_index].is_active = False
+    if not Game.players[winner_index].active:
+        move_chips(decide_winner())
+    
+
+def player_continue_choice(player):
+    decision = input(player.name + " would you like to continue? (Y/N)")
+    if decision.upper() == "Y":
+        print()
+    elif decision.upper() == "N":                
+        player.leave_game()
+    else:
+        print("Invalid Input")
+        player_continue_choice(player)
+
+
+def players_for_next_round():
+    for player in Game.players:
+        if len(Game.players) == 1:
+            print(Game.players[0].name + " is the winner!")
+            return
+        elif player.money <= 2 * Game.min_bet:
+            player.leave_game()
+        else:
+            player_continue_choice(player)
+    if len(Game.players) == 1:
+            print(Game.players[0].name + " is the winner!")
+            return
+    else:
+        round()
+
+
+def round():
     blind_bets()
     deal_hole_cards()
     betting_round()
@@ -432,7 +480,17 @@ def main():
     betting_round()
     Game.table_cards += draw_cards(1)
     best_combinations()
-    decide_winner()
+    winner_index = decide_winner()
+    print(Game.players[winner_index].name + " wins the round")
+    move_chips(winner_index)
+
+
+
+def main():
+    set_up_game(new_players)
+    new_round()
+    round()
+    players_for_next_round()
 
 
 main()
