@@ -90,16 +90,16 @@ class Game:
         if not self.active:
             return
         print("\n" + self.name + " Please choose from the following:")
-        choice = int(input("1 -> Check\n2 -> Bet\n3 -> Fold\n"))
-        if choice == 1:
+        choice = input("1 -> Check\n2 -> Bet\n3 -> Fold\n")
+        if choice == "1":
             return
-        elif choice == 2:
+        elif choice == "2":
             amount = self.stake + self.raise_amount()
             print()
             self.set_stake(amount)
             Game.first_bet = False
             return
-        elif choice == 3:
+        elif choice == "3":
             self.fold()
             return
         else:
@@ -161,18 +161,63 @@ def get_card_name(card):
     return str(value) + " of " + suit
 
 
-# increases the given index by one, or resets to zero once it passes the length of Game.players
+def print_card(card):
+    print(get_card_name(card))
+
+
+def print_cards(cards_array):
+    for i in range(len(cards_array)):
+        print_card(cards_array[i])
+
+
+# This function is useful for checking that drawn cards have been "removed from the deck"
+# by virtue of being set to active
+def print_deck():
+    for i in range(len(Cards.deck)):
+        if not Cards.deck[i].active:
+            print_card(Cards.deck[i])
+
+
+def print_monies():
+    for player in Game.players:
+        print(player.name + " has £" + str(player.money))
+
+
+def print_stakes():
+    for player in Game.players:
+        print(player.name + "'s stake is £" + str(player.stake))
+
+
+def print_bet(player, amount):
+    print(player.name + " bets £" + str(amount) + "\t\t Stake: £" + str(player.stake) + "\t\t\tPot: £" + str(Game.pot))
+
+
+# increases the given index by the increment, or resets to zero once it passes the length of Game.players
 def next_player(index, increment):
     for i in range(increment):
         if index + 1 < len(Game.players):
             index += 1
         else:
             index = 0
+    if not Game.players[index].active:
+        return next_player(index, 1)
     return index
 
 
 def next_turn():
+    input("\n" + Game.players[Game.turn_index].name + " press any key to end your turn.")
     Game.turn_index = next_player(Game.turn_index, 1)
+    system("clear")
+    input(Game.players[Game.turn_index].name + " press any key to begin your turn.")
+    system("clear")
+    print_monies()
+    print()
+    print_stakes()
+    print("\nCommunity Cards:")
+    print_cards(Game.table_cards)
+    print("\nYour Cards:")
+    print_cards(Game.players[Game.turn_index].cards)
+    print()
 
 
 def new_round():
@@ -191,24 +236,6 @@ def new_round():
     Game.players[Game.dealer_index].is_dealer = False
     Game.dealer_index = next_player(Game.dealer_index, 1)
     Game.players[Game.dealer_index].is_dealer = True
-    print(Game.players[Game.dealer_index].name + " is the dealer.\n")
-
-
-def print_card(card):
-    print(get_card_name(card))
-
-
-def print_cards(cards_array):
-    for i in range(len(cards_array)):
-        print_card(cards_array[i])
-
-
-# This function is useful for checking that drawn cards have been "removed from the deck"
-# by virtue of being set to active
-def print_deck():
-    for i in range(len(Cards.deck)):
-        if not Cards.deck[i].active:
-            print_card(Cards.deck[i])
 
 
 # returns a random inactive card and sets it to active
@@ -232,8 +259,6 @@ def draw_cards(number_of_cards):
 def deal_hole_cards():
     for player in Game.players:
         player.cards += (draw_cards(2))
-        print("\n" + player.name)
-        print_cards(player.cards)
 
 
 def order_cards(cards):
@@ -383,46 +408,35 @@ def decide_winner():
     return winner_index
 
 
-def print_bet(player, amount):
-    print(player.name + " bets £" + str(amount) + "\t\t Stake: £" + str(player.stake) + "\t\t\tPot: £" + str(Game.pot))
-
-
 def blind_bets():
     Game.turn_index = Game.dealer_index
+    system("clear")
+    print("You are the dealer.\n")
     next_turn()
+    print("You are the small blind.\n")
     Game.players[Game.turn_index].set_stake(Game.min_bet)
     next_turn()
+    print("You are the big blind.\n")
     Game.players[Game.turn_index].set_stake(Game.min_bet * 2)
     Game.first_bet = False
-    next_turn()
 
 
 def betting_round():
     while Game.first_bet:
+        next_turn()
         Game.players[Game.turn_index].place_first_bet()
-        next_turn()
     for i in range(len(Game.players) - 1):
-        Game.players[Game.turn_index].place_bet()
         next_turn()
+        Game.players[Game.turn_index].place_bet()
     continue_round = True
     while continue_round:
-        Game.players[Game.turn_index].place_bet()
         next_turn()
+        Game.players[Game.turn_index].place_bet()
         continue_round = False
         for player in Game.players:
             if player.active and not player.is_all_in and player.stake < Game.call_stake:
                 continue_round = True
     Game.first_bet = True
-
-
-def print_monies():
-    for player in Game.players:
-        print(player.name + " has  £" + str(player.money))
-
-
-def print_stakes():
-    for player in Game.players:
-        print(player.name + "'s stake is £" + str(player.stake))
 
 
 def move_chips(winner_index):
@@ -451,6 +465,8 @@ def player_continue_choice(player):
 
 
 def players_for_next_round():
+    print_monies()
+    print()
     for player in Game.players:
         if len(Game.players) == 1:
             print(Game.players[0].name + " is the winner!")
@@ -471,19 +487,16 @@ def round():
     deal_hole_cards()
     betting_round()
     Game.table_cards = draw_cards(3)
-    print("\nCommunity Cards:")
-    print_cards(Game.table_cards)
     betting_round()
     Game.table_cards += draw_cards(1)
-    print("\nCommunity Cards:")
-    print_cards(Game.table_cards)
     betting_round()
     Game.table_cards += draw_cards(1)
+    system("clear")
     best_combinations()
     winner_index = decide_winner()
-    print(Game.players[winner_index].name + " wins the round")
+    print("\n" + Game.players[winner_index].name + " wins the round")
     move_chips(winner_index)
-
+    
 
 
 def main():
