@@ -59,14 +59,14 @@ class Game:
             Game.call_stake = self.stake
 
     def raise_amount(self):
-        amount = int(input("\nEnter bet amount: "))
-        if type(amount) != int:
+        amount = input("\nEnter bet amount: ")
+        if type(int(amount)) != int:
             print("Invalid Input")
             self.raise_amount()
-        increase = amount + Game.call_stake - self.stake
+        increase = int(amount) + Game.call_stake - self.stake
         if increase >= self.money:
             return self.all_in()
-        elif self.money > amount >= 0:
+        elif self.money > increase >= 0:
             return increase
         else:
             print("Unexpected error")
@@ -87,7 +87,7 @@ class Game:
         Game.players.remove(self)
     
     def place_first_bet(self):
-        if not self.active:
+        if self.is_all_in or not self.active:
             return
         print("\n" + self.name + " Please choose from the following:")
         choice = input("1 -> Check\n2 -> Bet\n3 -> Fold\n")
@@ -110,19 +110,19 @@ class Game:
         if self.is_all_in or not self.active:
             return
         print("\n" + self.name + " Please choose from the following:")
-        choice = int(input("1 -> Call\n2 -> Raise\n3 -> Fold\n"))
-        if choice == 1:
+        choice = input("1 -> Call\n2 -> Raise\n3 -> Fold\n")
+        if choice == "1":
             print()
             if self.money > Game.call_stake - self.stake:
                 self.set_stake(Game.call_stake)
             else:
                 self.set_stake(self.all_in())
-        elif choice == 2:
+        elif choice == "2":
             print()
             amount = Game.call_stake + self.raise_amount()
             self.set_stake(amount)
             return
-        elif choice == 3:
+        elif choice == "3":
             self.fold()
             return
         else:
@@ -205,10 +205,10 @@ def next_player(index, increment):
 
 
 def next_turn():
-    input("\n" + Game.players[Game.turn_index].name + " press any key to end your turn.")
+    input("\nPress the ENTER key to end your turn.")
     Game.turn_index = next_player(Game.turn_index, 1)
     system("clear")
-    input(Game.players[Game.turn_index].name + " press any key to begin your turn.")
+    input(Game.players[Game.turn_index].name + " press ENTER to begin your turn.")
     system("clear")
     print_monies()
     print()
@@ -225,6 +225,7 @@ def new_round():
     time.sleep(1 * Game.speed)
     Game.table_cards = []
     Game.pot = 0
+    Game.call_stake = 0
     for player in Game.players:
         player.active = True
         player.is_all_in = False
@@ -293,6 +294,8 @@ def get_score(five_cards):
     value_of_kinds.append(five_cards[i].value)
     max_kind = max(kinds)
     min_kind = min(kinds)
+    kinds.sort()
+    kinds.reverse()
     five_cards.reverse()
     five_cards_values = (five_cards[0].value,
                          five_cards[1].value,
@@ -395,13 +398,14 @@ def best_combinations():
 # Need to figure out a way for pot splitting to be determined
 # Returns the winners index, so it can be used for the settling up process
 def decide_winner():
-    highest_score = Game.players[0].best_combination[1]
+    highest_score = [], 0, []
     winner_index = 0
     for i in range(len(Game.players)):
         if Game.players[i].active:
             candidate_score = Game.players[i].best_combination[1]
             if hands_identical(candidate_score, highest_score):
-                continue
+                print("The pot must be split")
+                return winner_index, i
             elif first_hand_best(candidate_score, highest_score):
                 highest_score = candidate_score
                 winner_index = i
@@ -426,16 +430,17 @@ def betting_round():
         next_turn()
         Game.players[Game.turn_index].place_first_bet()
     for i in range(len(Game.players) - 1):
-        next_turn()
-        Game.players[Game.turn_index].place_bet()
+        if Game.players[Game.turn_index].active:
+            next_turn()
+            Game.players[Game.turn_index].place_bet()
     continue_round = True
     while continue_round:
-        next_turn()
-        Game.players[Game.turn_index].place_bet()
         continue_round = False
         for player in Game.players:
             if player.active and not player.is_all_in and player.stake < Game.call_stake:
                 continue_round = True
+        next_turn()
+        Game.players[Game.turn_index].place_bet()
     Game.first_bet = True
 
 
@@ -448,7 +453,7 @@ def move_chips(winner_index):
         elif player.stake > winner_stake:
             Game.players[winner_index].money += winner_stake
             player.stake -= winner_stake
-            Game.player[winner_index].is_active = False
+            Game.players[winner_index].is_active = False
     if not Game.players[winner_index].active:
         move_chips(decide_winner())
     
@@ -465,6 +470,7 @@ def player_continue_choice(player):
 
 
 def players_for_next_round():
+    print()
     print_monies()
     print()
     for player in Game.players:
@@ -483,6 +489,7 @@ def players_for_next_round():
 
 
 def round():
+    new_round()
     blind_bets()
     deal_hole_cards()
     betting_round()
@@ -496,14 +503,12 @@ def round():
     winner_index = decide_winner()
     print("\n" + Game.players[winner_index].name + " wins the round")
     move_chips(winner_index)
+    players_for_next_round()
     
-
 
 def main():
     set_up_game(new_players)
-    new_round()
     round()
-    players_for_next_round()
-
+    
 
 main()
