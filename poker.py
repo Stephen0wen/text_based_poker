@@ -487,7 +487,8 @@ def move_chips(winner_index):
         if not Game.players[winner_index].active:
             move_chips(decide_winner())
     else:
-        print("Splitting the pot is not yet implemented...")
+        Game.players[winner_index[0]].money += Game.pot / 2
+        Game.players[winner_index[1]].money += Game.pot / 2
     
 
 def player_continue_choice(player):
@@ -542,6 +543,9 @@ def round():
     
 
 def main():
+    system("clear")
+    print("*****WELCOME TO TEXT BASED POKER*****\n\n\n")
+    input("Press ENTER to begin")
     system("clear")
     create_players(number_of_players())
     set_up_game()
