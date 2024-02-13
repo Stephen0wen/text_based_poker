@@ -52,10 +52,7 @@ class Game:
             Game.call_stake = self.stake
 
     def raise_amount(self):
-        amount = input("\nEnter bet amount: ")
-        if type(int(amount)) != int:
-            print("Invalid Input")
-            self.raise_amount()
+        amount = input_int("\nEnter bet amount: ")
         increase = int(amount) + Game.call_stake - self.stake
         if increase >= self.money:
             return self.money - (Game.call_stake - self.stake)
@@ -124,11 +121,8 @@ class Game:
 
 
 def number_of_players():
-    number_of_players = input("Select number of players from 2 to 10.\t")
-    if type(int(number_of_players)) != int:
-        print("Invalid Input\n")
-        number_of_players()
-    elif 2 <= int(number_of_players) <= 10:
+    number_of_players = input_int("Select number of players from 2 to 10.\t")
+    if 2 <= number_of_players <= 10:
         return int(number_of_players)
     else:
         print("Input is out of acceptable range.")
@@ -215,6 +209,16 @@ def print_stakes():
 
 def print_bet(player, amount):
     print(player.name + " bets £" + str(amount) + "\t\t Stake: £" + str(player.stake) + "\t\t\tPot: £" + str(Game.pot))
+
+
+def input_int(prompt):
+    integer = None
+    while integer is None:
+        try:
+            integer = int(input(prompt))
+        except ValueError:
+            print("Invalid input.")
+    return integer
 
 
 # increases the given index by the increment, or resets to zero once it passes the length of Game.players
@@ -430,7 +434,7 @@ def decide_winner():
             candidate_score = Game.players[i].best_combination[1]
             if hands_identical(candidate_score, highest_score):
                 print("The pot must be split")
-                return winner_index, i
+                return [winner_index, i]
             elif first_hand_best(candidate_score, highest_score):
                 highest_score = candidate_score
                 winner_index = i
@@ -470,17 +474,20 @@ def betting_round():
 
 
 def move_chips(winner_index):
-    winner_stake = Game.players[winner_index].stake
-    for player in Game.players:
-        if player.stake <= winner_stake:
-            Game.players[winner_index].money += player.stake
-            player.stake = 0
-        elif player.stake > winner_stake:
-            Game.players[winner_index].money += winner_stake
-            player.stake -= winner_stake
-            Game.players[winner_index].is_active = False
-    if not Game.players[winner_index].active:
-        move_chips(decide_winner())
+    if type(winner_index) == int:
+        winner_stake = Game.players[winner_index].stake
+        for player in Game.players:
+            if player.stake <= winner_stake:
+                Game.players[winner_index].money += player.stake
+                player.stake = 0
+            elif player.stake > winner_stake:
+                Game.players[winner_index].money += winner_stake
+                player.stake -= winner_stake
+                Game.players[winner_index].is_active = False
+        if not Game.players[winner_index].active:
+            move_chips(decide_winner())
+    else:
+        print("Splitting the pot is not yet implemented...")
     
 
 def player_continue_choice(player):
@@ -526,7 +533,10 @@ def round():
     system("clear")
     best_combinations()
     winner_index = decide_winner()
-    print("\n" + Game.players[winner_index].name + " wins the round")
+    if type(winner_index) == int:
+        print("\n" + Game.players[winner_index].name + " wins the round!")
+    else:
+        print("\n" + Game.players[winner_index[0]].name + " and "+ Game.players[winner_index[1]].name + " split the pot!")
     move_chips(winner_index)
     players_for_next_round()
     
