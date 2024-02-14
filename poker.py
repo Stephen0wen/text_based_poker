@@ -28,8 +28,9 @@ class Game:
     pot = 0
     first_bet = False
     call_stake = 0
+    turn_counter = 0
 
-    def __init__(self, name, is_human, money):
+    def __init__(self, name, is_human, stack):
         self.name = name
         self.is_human = is_human
         self.active = True
@@ -37,30 +38,33 @@ class Game:
         self.is_all_in = False
         self.cards = []
         self.best_combination = []
-        self.money = money
+        self.stack = stack
         self.stake = 0  # this is only the amount staked in the current betting round
         __class__.players.append(self)
 
-    # no need to check if amount is greater than money as this will be checked already
+    # no need to check if amount is greater than stack as this will be checked already
+    # Sets the players stake to the input value
     def set_stake(self, amount):
         increase = amount - self.stake
         self.stake = amount
-        self.money -= increase
+        self.stack -= increase
         Game.pot += increase
         print_bet(self, increase)
         if self.stake > Game.call_stake:
             Game.call_stake = self.stake
 
-    def raise_amount(self):
-        amount = input_int("\nEnter bet amount: ")
-        increase = int(amount) + Game.call_stake - self.stake
-        if increase >= self.money:
-            return self.money - (Game.call_stake - self.stake)
-        elif self.money > increase >= 0:
-            return increase
+    # returns the amount required to raise the call_stake by the input amount, or whatever amount will take the player all_in
+    def raise_amount(self, prompt):
+        amount = input_int(prompt)
+        new_stake = Game.call_stake + amount
+        stake_increase = new_stake - self.stake
+        if Game.call_stake + amount > self.stack:
+            return self.all_in
+        elif 0 <= stake_increase < self.stack:
+            return new_stake
         else:
             print("Unexpected error")
-            self.raise_amount()
+            self.raise_amount() 
             
     def fold(self):
         self.active = False
@@ -69,7 +73,7 @@ class Game:
     def all_in(self):
         print(self.name + " is all in!")
         self.is_all_in = True
-        return self.money
+        return self.stack + self.stake
 
     def leave_game(self):
         time.sleep(1 * Game.speed)
@@ -84,9 +88,7 @@ class Game:
         if choice == "1":
             return
         elif choice == "2":
-            amount = self.stake + self.raise_amount()
-            print()
-            self.set_stake(amount)
+            self.set_stake(self.raise_amount("\nEnter bet amount: "))
             Game.first_bet = False
             return
         elif choice == "3":
@@ -103,14 +105,12 @@ class Game:
         choice = input("1 -> Call\n2 -> Raise\n3 -> Fold\n")
         if choice == "1":
             print()
-            if self.money > Game.call_stake - self.stake:
+            if self.stack > Game.call_stake - self.stake:
                 self.set_stake(Game.call_stake)
             else:
                 self.set_stake(self.all_in())
         elif choice == "2":
-            print()
-            amount = Game.call_stake + self.raise_amount()
-            self.set_stake(amount)
+            self.set_stake(self.raise_amount("\nEnter raise amount: "))
             return
         elif choice == "3":
             self.fold()
@@ -199,12 +199,19 @@ def print_deck():
 
 def print_monies():
     for player in Game.players:
-        print(player.name + " has £" + str(player.money))
+        print(player.name + "'s stack is £" + str(player.stack))
 
 
 def print_stakes():
     for player in Game.players:
-        print(player.name + "'s stake is £" + str(player.stake))
+        if player.active and not player.is_all_in:
+            print(player.name + "'s current bet is £" + str(player.stake))
+        elif player.active and player.is_all_in:
+            print(player.name + "'s current bet is £" + str(player.stake) + " (All in)")
+        elif not player.active:
+            print(player.name + "'s current bet is £" + str(player.stake) + " (Folded)")
+        else:
+            print("Could not find " + player.name + "'s information.")
 
 
 def print_bet(player, amount):
@@ -223,6 +230,7 @@ def input_int(prompt):
 
 # increases the given index by the increment, or resets to zero once it passes the length of Game.players
 def next_player(index, increment):
+    Game.turn_counter += 1
     for i in range(increment):
         if index + 1 < len(Game.players):
             index += 1
@@ -245,9 +253,9 @@ def next_turn():
     print_stakes()
     print("\nCommunity Cards:")
     print_cards(Game.table_cards)
-    print("\nYour Cards:")
+    print("\n\nYour Cards:")
     print_cards(Game.players[Game.turn_index].cards)
-    print()
+    print("\n")
 
 
 def new_round():
@@ -454,24 +462,34 @@ def blind_bets():
     Game.first_bet = False
 
 
-def betting_round(player_index):
+def check_round(player_index):
     Game.turn_index = player_index - 1
-    while Game.first_bet:
+    Game.first_bet = True
+    Game.turn_counter = 0
+    while Game.first_bet and Game.turn_counter < len(Game.players):
         next_turn()
         Game.players[Game.turn_index].place_first_bet()
-    for i in range(len(Game.players) - 1):
-        if Game.players[Game.turn_index].active:
+    Game.call_stake += Game.min_bet
+
+
+def all_bets_equal_call():
+    for player in Game.players:
+        if player.active and not player.is_all_in and player.stake != Game.call_stake:
+            return False
+    return True
+
+
+def betting_round():
+    for i in range(len(Game.players)):
+        if Game.players[next_player(Game.turn_index, 1)].active:
             next_turn()
             Game.players[Game.turn_index].place_bet()
-    continue_round = True
-    while continue_round:
-        continue_round = False
-        for player in Game.players:
-            if player.active and not player.is_all_in and player.stake < Game.call_stake:
-                continue_round = True
-                next_turn()
-                Game.players[Game.turn_index].place_bet()
-    Game.first_bet = True
+        else:
+            i += 1
+            Game.turn_index = next_player(Game.turn_index)
+    while not all_bets_equal_call():
+        next_turn()
+        Game.players[Game.turn_index].place_bet()
 
 
 def move_chips(winner_index):
@@ -479,17 +497,17 @@ def move_chips(winner_index):
         winner_stake = Game.players[winner_index].stake
         for player in Game.players:
             if player.stake <= winner_stake:
-                Game.players[winner_index].money += player.stake
+                Game.players[winner_index].stack += player.stake
                 player.stake = 0
             elif player.stake > winner_stake:
-                Game.players[winner_index].money += winner_stake
+                Game.players[winner_index].stack += winner_stake
                 player.stake -= winner_stake
                 Game.players[winner_index].is_active = False
         if not Game.players[winner_index].active:
             move_chips(decide_winner())
     else:
-        Game.players[winner_index[0]].money += Game.pot / 2
-        Game.players[winner_index[1]].money += Game.pot / 2
+        Game.players[winner_index[0]].stack += Game.pot / 2
+        Game.players[winner_index[1]].stack += Game.pot / 2
     
 
 def player_continue_choice(player):
@@ -511,7 +529,7 @@ def players_for_next_round():
         if len(Game.players) == 1:
             print(Game.players[0].name + " is the winner!")
             exit
-        elif player.money <= 2 * Game.min_bet:
+        elif player.stack <= 2 * Game.min_bet:
             player.leave_game()
         else:
             player_continue_choice(player)
@@ -526,15 +544,16 @@ def round():
     new_round()
     blind_bets()
     deal_hole_cards()
-    betting_round(next_player(Game.dealer_index, 3))
-    next_turn()
-    Game.players[Game.turn_index].place_bet()
+    betting_round()
     Game.table_cards = draw_cards(3)
-    betting_round(Game.dealer_index + 1)
+    check_round(Game.dealer_index + 1)
+    betting_round()
     Game.table_cards += draw_cards(1)
-    betting_round(Game.dealer_index + 1)
+    check_round(Game.dealer_index + 1)
+    betting_round()
     Game.table_cards += draw_cards(1)
-    betting_round(Game.dealer_index + 1)
+    check_round(Game.dealer_index + 1)
+    betting_round()
     system("clear")
     best_combinations()
     winner_index = decide_winner()
