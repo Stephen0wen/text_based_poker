@@ -121,6 +121,7 @@ class Game:
 
 
 def number_of_players():
+    time.sleep(1 * Game.speed)
     number_of_players = input_int("Select number of players from 2 to 10.\t")
     if 2 <= number_of_players <= 10:
         return int(number_of_players)
@@ -598,7 +599,7 @@ def round():
 def main():
     system("clear")
     print("*****WELCOME TO TEXT BASED POKER*****\n\n\n")
-    time.sleep(1 * Game.speed)
+    time.sleep(5 * Game.speed)
     input("Press ENTER to begin")
     system("clear")
     create_players(number_of_players())
