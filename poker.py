@@ -60,7 +60,7 @@ class Game:
         new_stake = Game.call_stake + amount
         stake_increase = new_stake - self.stake
         if Game.call_stake + amount > self.stack:
-            return self.all_in
+            return self.all_in()
         elif 0 <= stake_increase < self.stack:
             return new_stake
         else:
@@ -73,7 +73,6 @@ class Game:
         print(self.name + " folds their cards")
 
     def all_in(self):
-        print(self.name + " is all in!")
         self.is_all_in = True
         return self.stack + self.stake
 
@@ -484,7 +483,8 @@ def check_round(player_index):
         last_player()
         next_turn()
         Game.players[Game.turn_index].place_first_bet()
-    Game.call_stake += Game.min_bet
+    if Game.first_bet:
+        Game.call_stake += Game.min_bet
 
 
 def all_bets_equal_call():
@@ -495,14 +495,11 @@ def all_bets_equal_call():
 
 
 def betting_round():
-    for i in range(len(Game.players)):
-        if Game.players[next_player(Game.turn_index, 1)].active:
-            last_player()
-            next_turn()
-            Game.players[Game.turn_index].place_bet()
-        else:
-            i += 1
-            Game.turn_index = next_player(Game.turn_index)
+    Game.turn_counter < 0
+    while Game.turn_counter < len(Game.players):
+        last_player()
+        next_turn()
+        Game.players[Game.turn_index].place_bet()
     while not all_bets_equal_call():
         last_player()
         next_turn()
@@ -527,34 +524,37 @@ def move_chips(winner_index):
         Game.players[winner_index[1]].stack += Game.pot / 2
     
 
-def player_continue_choice(player):
+def player_continue(player):
     decision = input(player.name + " would you like to continue? (Y/N)")
     if decision.upper() == "Y":
         print()
-    elif decision.upper() == "N":                
-        player.leave_game()
+        return True
+    elif decision.upper() == "N":
+        print()                
+        return False
     else:
         print("Invalid Input")
-        player_continue_choice(player)
+        player_continue(player)
 
 
 def players_for_next_round():
     print()
     print_monies()
     print()
+    leaving_players = []
     for player in Game.players:
         if len(Game.players) == 1:
             print(Game.players[0].name + " is the winner!")
             exit
         elif player.stack <= 2 * Game.min_bet:
-            player.leave_game()
-        else:
-            player_continue_choice(player)
-    else:
-        round()
+            leaving_players.append(player)
+        elif not player_continue(player):
+            leaving_players.append(player)
+    for player in leaving_players:
+        player.leave_game()
+    round()
 
 
-# need to find a way of escaping this code when Game.active_players == 1
 def round():
     new_round()
     blind_bets()
