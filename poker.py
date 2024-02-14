@@ -495,7 +495,7 @@ def all_bets_equal_call():
 
 
 def betting_round():
-    Game.turn_counter < 0
+    Game.turn_counter = 0
     while Game.turn_counter < len(Game.players):
         last_player()
         next_turn()
