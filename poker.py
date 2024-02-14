@@ -21,6 +21,7 @@ class Cards:
 class Game:
     speed = 1.5
     players = []
+    active_players = []
     min_bet = 2
     dealer_index = -1
     turn_index = 0
@@ -68,6 +69,7 @@ class Game:
             
     def fold(self):
         self.active = False
+        Game.active_players.remove(self)
         print(self.name + " folds their cards")
 
     def all_in(self):
@@ -264,12 +266,14 @@ def new_round():
     Game.table_cards = []
     Game.pot = 0
     Game.call_stake = 0
+    Game.active_players = []
     for player in Game.players:
         player.active = True
         player.is_all_in = False
         player.cards = []
         player.best_combination = []
         player.stake = 0
+        Game.active_players.append(player)
     for card in Cards.deck:
         card.active = False
     Game.players[Game.dealer_index].is_dealer = False
@@ -540,6 +544,7 @@ def players_for_next_round():
         round()
 
 
+# need to find a way of escaping this code when Game.active_players == 1
 def round():
     new_round()
     blind_bets()
