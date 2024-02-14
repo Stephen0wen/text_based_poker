@@ -163,6 +163,27 @@ def set_up_game():
             Cards(j, suits[i])
 
 
+def new_round():
+    print("\n\nStarting new round...\n\n")
+    time.sleep(1 * Game.speed)
+    Game.table_cards = []
+    Game.pot = 0
+    Game.call_stake = 0
+    Game.active_players = []
+    for player in Game.players:
+        player.active = True
+        player.is_all_in = False
+        player.cards = []
+        player.best_combination = []
+        player.stake = 0
+        Game.active_players.append(player)
+    for card in Cards.deck:
+        card.active = False
+    Game.players[Game.dealer_index].is_dealer = False
+    Game.dealer_index = next_player(Game.dealer_index, 1)
+    Game.players[Game.dealer_index].is_dealer = True
+
+
 # This is needed as a function for the scoring process
 def get_value(card):
         return card.value
@@ -258,27 +279,6 @@ def next_turn():
     print("\n\nYour Cards:")
     print_cards(Game.players[Game.turn_index].cards)
     print("\n")
-
-
-def new_round():
-    print("\n\nStarting new round...\n\n")
-    time.sleep(1 * Game.speed)
-    Game.table_cards = []
-    Game.pot = 0
-    Game.call_stake = 0
-    Game.active_players = []
-    for player in Game.players:
-        player.active = True
-        player.is_all_in = False
-        player.cards = []
-        player.best_combination = []
-        player.stake = 0
-        Game.active_players.append(player)
-    for card in Cards.deck:
-        card.active = False
-    Game.players[Game.dealer_index].is_dealer = False
-    Game.dealer_index = next_player(Game.dealer_index, 1)
-    Game.players[Game.dealer_index].is_dealer = True
 
 
 # returns a random inactive card and sets it to active
@@ -453,6 +453,16 @@ def decide_winner():
     return winner_index
 
 
+def last_player():
+    if len(Game.active_players) == 1:
+        system("clear")
+        winner_index = next_player(0, 1)
+        print("\n" + Game.players[winner_index].name + " wins the round!")
+        move_chips(winner_index)
+        players_for_next_round()
+    return
+
+
 def blind_bets():
     Game.turn_index = Game.dealer_index
     system("clear")
@@ -471,6 +481,7 @@ def check_round(player_index):
     Game.first_bet = True
     Game.turn_counter = 0
     while Game.first_bet and Game.turn_counter < len(Game.players):
+        last_player()
         next_turn()
         Game.players[Game.turn_index].place_first_bet()
     Game.call_stake += Game.min_bet
@@ -486,12 +497,14 @@ def all_bets_equal_call():
 def betting_round():
     for i in range(len(Game.players)):
         if Game.players[next_player(Game.turn_index, 1)].active:
+            last_player()
             next_turn()
             Game.players[Game.turn_index].place_bet()
         else:
             i += 1
             Game.turn_index = next_player(Game.turn_index)
     while not all_bets_equal_call():
+        last_player()
         next_turn()
         Game.players[Game.turn_index].place_bet()
 
@@ -508,7 +521,7 @@ def move_chips(winner_index):
                 player.stake -= winner_stake
                 Game.players[winner_index].is_active = False
         if not Game.players[winner_index].active:
-            move_chips(decide_winner())
+            move_chips(winner_index)
     else:
         Game.players[winner_index[0]].stack += Game.pot / 2
         Game.players[winner_index[1]].stack += Game.pot / 2
@@ -537,9 +550,6 @@ def players_for_next_round():
             player.leave_game()
         else:
             player_continue_choice(player)
-    if len(Game.players) == 1:
-            print(Game.players[0].name + " is the winner!")
-            exit
     else:
         round()
 
