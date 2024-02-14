@@ -19,7 +19,7 @@ class Cards:
 
 
 class Game:
-    speed = 1.5
+    speed = 0.2
     players = []
     active_players = []
     min_bet = 2
@@ -70,7 +70,6 @@ class Game:
     def fold(self):
         self.active = False
         Game.active_players.remove(self)
-        print(self.name + " folds their cards")
 
     def all_in(self):
         self.is_all_in = True
@@ -147,6 +146,7 @@ def new_player_name(player_number):
 def create_players(number_of_players):
     players = []
     for i in range(number_of_players):
+        time.sleep(0.5 * Game.speed)
         name = new_player_name(i + 1)
         Game(name, True, buy_in)
     return
@@ -221,11 +221,13 @@ def print_deck():
 
 def print_monies():
     for player in Game.players:
+        time.sleep(0.5 * Game.speed)
         print(player.name + "'s stack is £" + str(player.stack))
 
 
 def print_stakes():
     for player in Game.players:
+        time.sleep(0.5 * Game.speed)
         if player.active and not player.is_all_in:
             print(player.name + "'s current bet is £" + str(player.stake))
         elif player.active and player.is_all_in:
@@ -237,6 +239,7 @@ def print_stakes():
 
 
 def print_bet(player, amount):
+    time.sleep(1 * Game.speed)
     print(player.name + " bets £" + str(amount) + "\t\t Stake: £" + str(player.stake) + "\t\t\tPot: £" + str(Game.pot))
 
 
@@ -264,18 +267,27 @@ def next_player(index, increment):
 
 
 def next_turn():
+    time.sleep(1 * Game.speed)
     input("\nPress the ENTER key to continue.")
     Game.turn_index = next_player(Game.turn_index, 1)
     system("clear")
+    time.sleep(1 * Game.speed)
     input(Game.players[Game.turn_index].name + " press ENTER to begin your turn.")
     system("clear")
+    time.sleep(1 * Game.speed)
     print("***" + Game.players[Game.turn_index].name + "'s turn***\n")
+    time.sleep(1 * Game.speed)
     print_monies()
     print()
+    time.sleep(1 * Game.speed)
     print_stakes()
+    time.sleep(1 * Game.speed)
     print("\nCommunity Cards:")
+    time.sleep(1 * Game.speed)
     print_cards(Game.table_cards)
+    time.sleep(1 * Game.speed)
     print("\n\nYour Cards:")
+    time.sleep(1 * Game.speed)
     print_cards(Game.players[Game.turn_index].cards)
     print("\n")
 
@@ -465,11 +477,14 @@ def last_player():
 def blind_bets():
     Game.turn_index = Game.dealer_index
     system("clear")
+    time.sleep(1 * Game.speed)
     print(Game.players[Game.turn_index].name + " you are the dealer.\n")
     next_turn()
+    time.sleep(1 * Game.speed)
     print("You are the small blind.\n")
     Game.players[Game.turn_index].set_stake(Game.min_bet)
     next_turn()
+    time.sleep(1 * Game.speed)
     print("You are the big blind.\n")
     Game.players[Game.turn_index].set_stake(Game.min_bet * 2)
     Game.first_bet = False
@@ -583,6 +598,7 @@ def round():
 def main():
     system("clear")
     print("*****WELCOME TO TEXT BASED POKER*****\n\n\n")
+    time.sleep(1 * Game.speed)
     input("Press ENTER to begin")
     system("clear")
     create_players(number_of_players())
