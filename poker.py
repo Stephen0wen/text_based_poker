@@ -90,6 +90,7 @@ class Game:
         elif choice == "2":
             self.set_stake(self.raise_amount("\nEnter bet amount: "))
             Game.first_bet = False
+            Game.turn_counter = 1
             return
         elif choice == "3":
             self.fold()
@@ -209,6 +210,7 @@ def print_card(card):
 
 def print_cards(cards_array):
     for i in range(len(cards_array)):
+        time.sleep(1 * Game.speed)
         print_card(cards_array[i])
 
 
@@ -442,8 +444,11 @@ def best_combinations():
     print()
     for player in Game.players:
         if player.active:
+            time.sleep(2 * Game.speed)
             print(player.name)
+            time.sleep(2 * Game.speed)
             print_cards(player.cards)
+            time.sleep(2 * Game.speed)
             player.best_combination = best_hand_score(possible_hands(player.cards + Game.table_cards))
             print(player.best_combination[1][0] + "\n")
 
@@ -489,6 +494,10 @@ def blind_bets():
     print("You are the big blind.\n")
     Game.players[Game.turn_index].set_stake(Game.min_bet * 2)
     Game.first_bet = False
+    Game.turn_counter = 0
+    time.sleep(1 * Game.speed)  
+    input("\nPress the ENTER key to continue.")
+    system("clear")
 
 
 def check_round(player_index):
@@ -501,6 +510,10 @@ def check_round(player_index):
         Game.players[Game.turn_index].place_first_bet()
     if Game.first_bet:
         Game.call_stake += Game.min_bet
+        last_player()
+        next_turn()
+        Game.players[Game.turn_index].place_bet()
+        Game.turn_counter = 1
 
 
 def all_bets_equal_call():
@@ -511,7 +524,6 @@ def all_bets_equal_call():
 
 
 def betting_round():
-    Game.turn_counter = 0
     while Game.turn_counter < len(Game.players):
         last_player()
         next_turn()
@@ -520,6 +532,9 @@ def betting_round():
         last_player()
         next_turn()
         Game.players[Game.turn_index].place_bet()
+    time.sleep(1 * Game.speed)    
+    input("\nPress the ENTER key to continue.")
+    system("clear")
 
 
 def move_chips(winner_index):
@@ -574,18 +589,32 @@ def players_for_next_round():
 def round():
     new_round()
     blind_bets()
+    print("***DEALING HOLE CARDS***")
+    time.sleep(3 * Game.speed)
     deal_hole_cards()
     betting_round()
+    print("***THE FLOP***\n")
+    time.sleep(3 * Game.speed)
     Game.table_cards = draw_cards(3)
+    print_cards(Game.table_cards)
     check_round(Game.dealer_index + 1)
     betting_round()
+    print("***THE TURN***")
+    time.sleep(3 * Game.speed)
     Game.table_cards += draw_cards(1)
+    print_cards(Game.table_cards)
     check_round(Game.dealer_index + 1)
     betting_round()
+    print("***The RIVER***")
+    time.sleep(3 * Game.speed)
     Game.table_cards += draw_cards(1)
+    print_cards(Game.table_cards)
     check_round(Game.dealer_index + 1)
     betting_round()
-    system("clear")
+    print("***THE SHOWDOWN***")
+    time.sleep(2 * Game.speed)
+    input("\n\nPress the ENTER key to begin\n\n")
+    time.sleep(3 * Game.speed)
     best_combinations()
     winner_index = decide_winner()
     if type(winner_index) == int:
@@ -600,7 +629,7 @@ def main():
     system("clear")
     print("*****WELCOME TO TEXT BASED POKER*****\n\n\n")
     time.sleep(5 * Game.speed)
-    input("Press ENTER to begin")
+    input("Press the ENTER enter key to begin")
     system("clear")
     create_players(number_of_players())
     set_up_game()
