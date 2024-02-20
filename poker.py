@@ -71,8 +71,11 @@ class Game:
         self.active = False
         Game.active_players.remove(self)
 
+    # Removing from active players should mean players who are all-in are skipped in any subsequent betting rounds.
+    # Leaving them set as active is required for the chip moving process in the event that they win, but other players have larger bets. 
     def all_in(self):
         self.is_all_in = True
+        Game.active_players.remove(self)    
         return self.stack + self.stake
 
     def leave_game(self):
@@ -123,12 +126,12 @@ class Game:
 
 def number_of_players():
     time.sleep(1 * Game.speed)
-    number_of_players = input_int("Select number of players from 2 to 10.\t")
-    if 2 <= number_of_players <= 10:
-        return int(number_of_players)
+    number = input_int("Select number of players from 2 to 10.\t")
+    if 2 <= number <= 10:
+        return number
     else:
         print("Input is out of acceptable range.")
-        number_of_players()
+        return number_of_players()
 
 
 def new_player_name(player_number):
@@ -471,12 +474,22 @@ def decide_winner():
 
 
 def last_player():
-    if len(Game.active_players) == 1:
-        system("clear")
-        winner_index = next_player(0, 1)
-        print("\n" + Game.players[winner_index].name + " wins the round!")
-        move_chips(winner_index)
-        players_for_next_round()
+    if len(Game.active_players) <= 1:
+        if all_bets_equal_call():
+            contenders = 0
+            for player in Game.players:
+                if player.active:
+                    contenders += 1
+            if contenders > 1:
+                while len(Game.table_cards) < 5:
+                    Game.table_cards += draw_cards(1)
+                showdown()
+            else:
+                system("clear")
+                winner_index = next_player(0, 1)
+                print("\n" + Game.players[winner_index].name + " wins the round!")
+                move_chips(winner_index)
+            players_for_next_round()
     return
 
 
@@ -505,14 +518,14 @@ def check_round(player_index):
     Game.first_bet = True
     Game.turn_counter = 0
     while Game.first_bet and Game.turn_counter < len(Game.players):
-        last_player()
         next_turn()
         Game.players[Game.turn_index].place_first_bet()
+        last_player()
     if Game.first_bet:
         Game.call_stake += Game.min_bet
-        last_player()
         next_turn()
         Game.players[Game.turn_index].place_bet()
+        last_player()
         Game.turn_counter = 1
 
 
@@ -525,13 +538,13 @@ def all_bets_equal_call():
 
 def betting_round():
     while Game.turn_counter < len(Game.players):
-        last_player()
         next_turn()
         Game.players[Game.turn_index].place_bet()
+        last_player()
     while not all_bets_equal_call():
-        last_player()
         next_turn()
         Game.players[Game.turn_index].place_bet()
+        last_player()
     time.sleep(1 * Game.speed)    
     input("\nPress the ENTER key to continue.")
     system("clear")
@@ -549,7 +562,8 @@ def move_chips(winner_index):
                 player.stake -= winner_stake
                 Game.players[winner_index].is_active = False
         if not Game.players[winner_index].active:
-            move_chips(winner_index)
+            next_winner_index = decide_winner()
+            move_chips(next_winner_index)
     else:
         Game.players[winner_index[0]].stack += Game.pot / 2
         Game.players[winner_index[1]].stack += Game.pot / 2
@@ -566,6 +580,56 @@ def player_continue(player):
     else:
         print("Invalid Input")
         player_continue(player)
+
+
+def pre_flop():
+    blind_bets()
+    print("***DEALING HOLE CARDS***")
+    time.sleep(3 * Game.speed)
+    deal_hole_cards()
+    betting_round()
+    
+
+def flop():
+    print("***THE FLOP***\n")
+    time.sleep(3 * Game.speed)
+    Game.table_cards = draw_cards(3)
+    print_cards(Game.table_cards)
+    check_round(Game.dealer_index + 1)
+    betting_round()
+
+
+def the_turn():
+    print("***THE TURN***")
+    time.sleep(3 * Game.speed)
+    Game.table_cards += draw_cards(1)
+    print_cards(Game.table_cards)
+    check_round(Game.dealer_index + 1)
+    betting_round()
+
+
+def the_river():
+    print("***The RIVER***")
+    time.sleep(3 * Game.speed)
+    Game.table_cards += draw_cards(1)
+    print_cards(Game.table_cards)
+    check_round(Game.dealer_index + 1)
+    betting_round()
+
+
+def showdown():
+    system("clear")
+    print("***THE SHOWDOWN***")
+    time.sleep(2 * Game.speed)
+    input("\n\nPress the ENTER key to begin\n\n")
+    time.sleep(3 * Game.speed)
+    best_combinations()
+    winner_index = decide_winner()
+    if type(winner_index) == int:
+        print("\n" + Game.players[winner_index].name + " wins the round!")
+    else:
+        print("\n" + Game.players[winner_index[0]].name + " and "+ Game.players[winner_index[1]].name + " split the pot!")
+    move_chips(winner_index)
 
 
 def players_for_next_round():
@@ -588,40 +652,11 @@ def players_for_next_round():
 
 def round():
     new_round()
-    blind_bets()
-    print("***DEALING HOLE CARDS***")
-    time.sleep(3 * Game.speed)
-    deal_hole_cards()
-    betting_round()
-    print("***THE FLOP***\n")
-    time.sleep(3 * Game.speed)
-    Game.table_cards = draw_cards(3)
-    print_cards(Game.table_cards)
-    check_round(Game.dealer_index + 1)
-    betting_round()
-    print("***THE TURN***")
-    time.sleep(3 * Game.speed)
-    Game.table_cards += draw_cards(1)
-    print_cards(Game.table_cards)
-    check_round(Game.dealer_index + 1)
-    betting_round()
-    print("***The RIVER***")
-    time.sleep(3 * Game.speed)
-    Game.table_cards += draw_cards(1)
-    print_cards(Game.table_cards)
-    check_round(Game.dealer_index + 1)
-    betting_round()
-    print("***THE SHOWDOWN***")
-    time.sleep(2 * Game.speed)
-    input("\n\nPress the ENTER key to begin\n\n")
-    time.sleep(3 * Game.speed)
-    best_combinations()
-    winner_index = decide_winner()
-    if type(winner_index) == int:
-        print("\n" + Game.players[winner_index].name + " wins the round!")
-    else:
-        print("\n" + Game.players[winner_index[0]].name + " and "+ Game.players[winner_index[1]].name + " split the pot!")
-    move_chips(winner_index)
+    pre_flop()
+    flop()
+    the_turn()
+    the_river()
+    showdown()
     players_for_next_round()
     
 
